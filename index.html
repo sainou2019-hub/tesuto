@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyTracker - テスト範囲＆学習記録</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js for Study Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Scrollbar & Styles -->
+  <style>
+    .glass-card {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col font-sans antialiased">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-brand-500/20">
+          <i data-lucide="book-open-check" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-900 text-lg leading-none">StudyTracker</h1>
+          <p class="text-xs text-slate-500 mt-1">テスト範囲 & 学習記録ノート</p>
+        </div>
+      </div>
+
+      <!-- Header Right: User Info / Auth Button -->
+      <div class="flex items-center gap-3">
+        <!-- Help Button for GitHub Pages setup -->
+        <button id="btn-open-guide" class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors text-xs flex items-center gap-1">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">セットアップ手順</span>
+        </button>
+
+        <!-- Auth State Elements -->
+        <div id="auth-loading" class="flex items-center gap-2 text-xs text-slate-400">
+          <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> 認証中...
+        </div>
+
+        <button id="btn-login" class="hidden inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium px-4 py-2 rounded-xl text-sm shadow-sm transition-all hover:shadow">
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Googleでログイン
+        </button>
+
+        <div id="user-profile" class="hidden flex items-center gap-3">
+          <img id="user-avatar" src="" alt="User Avatar" class="w-8 h-8 rounded-full border border-slate-200">
+          <span id="user-name" class="text-sm font-medium text-slate-700 hidden md:inline"></span>
+          <button id="btn-logout" title="ログアウト" class="p-2 text-slate-400 hover:text-red-600 hover:bg-slate-100 rounded-lg transition-colors">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Logged Out View Banner -->
+    <div id="view-logged-out" class="hidden my-12 text-center max-w-lg mx-auto">
+      <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <i data-lucide="lock" class="w-8 h-8"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-slate-900 mb-2">ログインが必要です</h2>
+      <p class="text-slate-600 text-sm mb-6">
+        テスト範囲の管理や日々の勉強時間をクラウド（Firestore）に記録するため、Googleアカウントでログインしてください。
+      </p>
+      <button id="btn-login-hero" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-medium px-6 py-3 rounded-xl text-sm shadow-md transition-all hover:shadow-lg">
+        <i data-lucide="log-in" class="w-4 h-4"></i>
+        Googleでログインを開始
+      </button>
+    </div>
+
+    <!-- Logged In Content (Dashboard & Navigation Tabs) -->
+    <div id="view-app" class="hidden space-y-6">
+
+      <!-- Navigation Tabs -->
+      <div class="flex items-center space-x-1 border-b border-slate-200 overflow-x-auto pb-1">
+        <button data-tab="dashboard" class="tab-btn px-4 py-2.5 text-sm font-medium rounded-lg text-brand-600 bg-brand-50 flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i> ダッシュボード
+        </button>
+        <button data-tab="scopes" class="tab-btn px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="list-checks" class="w-4 h-4"></i> テスト範囲管理
+        </button>
+        <button data-tab="logs" class="tab-btn px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="pen-tool" class="w-4 h-4"></i> 勉強記録をつける
+        </button>
+        <button data-tab="analytics" class="tab-btn px-4 py-2.5 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="bar-chart-2" class="w-4 h-4"></i> 統計・グラフ
+        </button>
+      </div>
+
+      <!-- TAB 1: DASHBOARD -->
+      <div id="tab-dashboard" class="tab-content space-y-6">
+        <!-- Quick Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <i data-lucide="clock" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">総勉強時間</p>
+              <p id="stat-total-time" class="text-2xl font-bold text-slate-900 mt-0.5">0<span class="text-xs font-normal text-slate-500 ml-1">時間</span></p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <i data-lucide="calendar" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">今週の勉強量</p>
+              <p id="stat-weekly-time" class="text-2xl font-bold text-slate-900 mt-0.5">0<span class="text-xs font-normal text-slate-500 ml-1">時間</span></p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">テスト範囲 完了率</p>
+              <p id="stat-scope-progress" class="text-2xl font-bold text-slate-900 mt-0.5">0%</p>
+            </div>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+              <i data-lucide="file-text" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-xs text-slate-500 font-medium">登録科目数</p>
+              <p id="stat-subjects-count" class="text-2xl font-bold text-slate-900 mt-0.5">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope Overview & Recent Activity grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Left: Scope Progress Summary -->
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="target" class="w-5 h-5 text-brand-600"></i>
+                各科目のテスト範囲 達成状況
+              </h3>
+              <button onclick="switchTab('scopes')" class="text-xs text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1">
+                編集・詳細 <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <div id="dashboard-scope-summary" class="space-y-4">
+              <p class="text-slate-400 text-sm italic">テスト範囲が登録されていません。「テスト範囲管理」タブから追加してください。</p>
+            </div>
+          </div>
+
+          <!-- Right: Recent Activity Log -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <i data-lucide="history" class="w-5 h-5 text-brand-600"></i>
+                  最近の学習記録
+                </h3>
+                <button onclick="switchTab('logs')" class="text-xs text-brand-600 hover:text-brand-700 font-medium">全表示</button>
+              </div>
+
+              <div id="dashboard-recent-logs" class="space-y-3">
+                <p class="text-slate-400 text-sm italic">学習記録がありません。</p>
+              </div>
+            </div>
+
+            <button onclick="switchTab('logs')" class="mt-4 w-full py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <i data-lucide="plus" class="w-4 h-4"></i> 今日の学習を記録する
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: TEST SCOPES -->
+      <div id="tab-scopes" class="tab-content space-y-6 hidden">
+        <!-- Scope Add/Edit Card -->
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-5 h-5 text-brand-600"></i> 科目のテスト範囲を追加
+          </h3>
+
+          <form id="form-add-scope" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">科目名</label>
+              <input type="text" id="input-scope-subject" placeholder="例: 数学I, 現代文, 英語コミュニケーション" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">テスト日（任意）</label>
+              <input type="date" id="input-scope-date" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">サブ範囲・タスク（改行で複数）</label>
+              <input type="text" id="input-scope-items" placeholder="例: 教科書 P.20-45, ワーク問1-30" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+            </div>
+            <div class="md:col-span-3 flex justify-end">
+              <button type="submit" class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition-all shadow-sm hover:shadow flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i> 科目範囲を保存
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Scope List -->
+        <div id="scope-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <p class="text-slate-400 text-sm italic col-span-2 text-center py-8">テスト範囲データがありません。上のフォームから登録してください。</p>
+        </div>
+      </div>
+
+      <!-- TAB 3: STUDY LOGS -->
+      <div id="tab-logs" class="tab-content space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Log Input Form -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-brand-600"></i> 学習内容を記録
+            </h3>
+
+            <form id="form-add-log" class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">科目</label>
+                <input type="text" id="input-log-subject" list="registered-subjects-list" placeholder="例: 数学I, 英語" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                <datalist id="registered-subjects-list"></datalist>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">勉強時間 (分)</label>
+                  <input type="number" id="input-log-duration" min="5" step="5" placeholder="60" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">理解度 (1〜5)</label>
+                  <select id="input-log-rating" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white">
+                    <option value="5">⭐⭐⭐⭐⭐ (完璧)</option>
+                    <option value="4">⭐⭐⭐⭐ (理解した)</option>
+                    <option value="3" selected>⭐⭐⭐ (普通)</option>
+                    <option value="2">⭐⭐ (少し不安)</option>
+                    <option value="1">⭐ (要復習)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">勉強した内容・メモ</label>
+                <textarea id="input-log-content" rows="3" placeholder="教科書P.30の二次関数問題を解いた。解の公式のケアレスミスに注意。" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"></textarea>
+              </div>
+
+              <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-medium py-2.5 rounded-xl text-sm transition-all shadow-sm hover:shadow flex items-center justify-center gap-2">
+                <i data-lucide="check" class="w-4 h-4"></i> 記録を保存
+              </button>
+            </form>
+          </div>
+
+          <!-- Log History List -->
+          <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <i data-lucide="list" class="w-5 h-5 text-brand-600"></i> 学習履歴タイムライン
+            </h3>
+
+            <div id="logs-timeline" class="space-y-4">
+              <p class="text-slate-400 text-sm italic">記録がまだありません。</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- TAB 4: ANALYTICS -->
+      <div id="tab-analytics" class="tab-content space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Subject Chart Card -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-5 h-5 text-brand-600"></i> 科目別 学習時間割合
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="chart-subject"></canvas>
+            </div>
+          </div>
+
+          <!-- Daily Progress Chart Card -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <i data-lucide="trending-up" class="w-5 h-5 text-brand-600"></i> 直近7日間の学習時間の推移
+            </h3>
+            <div class="h-64 flex items-center justify-center">
+              <canvas id="chart-daily"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Setup Instructions Modal (GitHub Pages & Firebase guide) -->
+  <div id="modal-guide" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b pb-3">
+        <h3 class="font-bold text-slate-900 text-lg flex items-center gap-2">
+          <i data-lucide="info" class="w-5 h-5 text-brand-600"></i>
+          GitHub Pages & Firebase 設定手順
+        </h3>
+        <button id="btn-close-guide" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="text-sm text-slate-600 space-y-3 leading-relaxed">
+        <p>このアプリケーションをGitHub Pagesで動かすために必要な設定事項です。</p>
+
+        <div class="bg-amber-50 border-l-4 border-amber-400 p-3 rounded text-amber-800 text-xs">
+          <strong>⚠️ 必須設定（Googleログインエラー防止）:</strong><br>
+          Firebaseコンソールで GitHub Pages のドメインを「承認済みドメイン」に追加する必要があります。
+        </div>
+
+        <ol class="list-decimal list-inside space-y-2 font-medium text-slate-700">
+          <li><a href="https://console.firebase.google.com/" target="_blank" class="text-brand-600 underline">Firebase Console</a> を開く</li>
+          <li><strong>Authentication</strong> ＞ <strong>設定</strong> ＞ <strong>承認済みドメイン</strong> タブに移動</li>
+          <li>「ドメインを追加」をクリックし、あなたの GitHub Pages ドメイン (例: <code class="bg-slate-100 px-1 py-0.5 rounded text-xs">your-username.github.io</code>) を追加</li>
+          <li><strong>Firestore Database</strong> を有効化し、適切なセキュリティルールを設定</li>
+        </ol>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <p class="text-xs font-semibold text-slate-700 mb-1">推奨 Firestore セキュリティルール:</p>
+          <pre class="text-[11px] bg-slate-900 text-slate-100 p-2 rounded overflow-x-auto">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}</pre>
+        </div>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button id="btn-close-guide-2" class="bg-slate-800 text-white font-medium px-4 py-2 rounded-xl text-sm hover:bg-slate-900 transition-colors">
+          理解しました
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Firebase & App Script (ES Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup, 
+      signOut, 
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      collection, 
+      addDoc, 
+      deleteDoc,
+      updateDoc,
+      onSnapshot, 
+      query, 
+      orderBy, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // User's Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCT709lT7tkGKbUvi3_OSt8aJJdkfy7Iqg",
+      authDomain: "tesuto-82c38.firebaseapp.com",
+      projectId: "tesuto-82c38",
+      storageBucket: "tesuto-82c38.firebasestorage.app",
+      messagingSenderId: "566567931617",
+      appId: "1:566567931617:web:9a52b28cb05e0406df31a0"
+    };
+
+    // Initialize Firebase Services
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // Application State Variables
+    let currentUser = null;
+    let scopesData = [];
+    let logsData = [];
+    let chartSubjectInstance = null;
+    let chartDailyInstance = null;
+
+    // Toast Utility Function
+    function showToast(message, type = 'info') {
+      const toastContainer = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-rose-600 text-white',
+        info: 'bg-slate-800 text-white'
+      };
+
+      toast.className = `${bgColors[type] || bgColors.info} text-sm font-medium px-4 py-3 rounded-xl shadow-lg transition-all transform translate-y-2 opacity-0 pointer-events-auto flex items-center gap-2`;
+      toast.innerHTML = `<span>${message}</span>`;
+
+      toastContainer.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Auth DOM Elements
+    const btnLogin = document.getElementById('btn-login');
+    const btnLoginHero = document.getElementById('btn-login-hero');
+    const btnLogout = document.getElementById('btn-logout');
+    const authLoading = document.getElementById('auth-loading');
+    const userProfile = document.getElementById('user-profile');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const viewLoggedOut = document.getElementById('view-logged-out');
+    const viewApp = document.getElementById('view-app');
+
+    // Google Login Handler
+    async function handleLogin() {
+      try {
+        await signInWithPopup(auth, googleProvider);
+        showToast('ログインに成功しました！', 'success');
+      } catch (error) {
+        console.error('Login error:', error);
+        showToast('ログインに失敗しました: ' + error.message, 'error');
+      }
+    }
+
+    // Logout Handler
+    async function handleLogout() {
+      try {
+        await signOut(auth);
+        showToast('ログアウトしました', 'info');
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+
+    btnLogin.addEventListener('click', handleLogin);
+    btnLoginHero.addEventListener('click', handleLogin);
+    btnLogout.addEventListener('click', handleLogout);
+
+    // Auth State Changed Observer
+    onAuthStateChanged(auth, (user) => {
+      authLoading.classList.add('hidden');
+
+      if (user) {
+        currentUser = user;
+        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+        userName.textContent = user.displayName || 'ユーザー';
+        
+        btnLogin.classList.add('hidden');
+        userProfile.classList.remove('hidden');
+        viewLoggedOut.classList.add('hidden');
+        viewApp.classList.remove('hidden');
+
+        // Start Listening to User's Firestore Collections
+        subscribeToFirestoreData();
+      } else {
+        currentUser = null;
+        btnLogin.classList.remove('hidden');
+        userProfile.classList.add('hidden');
+        viewLoggedOut.classList.remove('hidden');
+        viewApp.classList.add('hidden');
+      }
+    });
+
+    // Firestore Listeners
+    let unsubscribeScopes = null;
+    let unsubscribeLogs = null;
+
+    function subscribeToFirestoreData() {
+      if (!currentUser) return;
+
+      // 1. Listen to Test Scopes Collection
+      const scopesRef = collection(db, 'users', currentUser.uid, 'scopes');
+      if (unsubscribeScopes) unsubscribeScopes();
+      
+      unsubscribeScopes = onSnapshot(scopesRef, (snapshot) => {
+        scopesData = [];
+        snapshot.forEach(docSnap => {
+          scopesData.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderScopes();
+        updateSubjectDataList();
+        updateDashboard();
+      }, (err) => {
+        console.error("Scopes snapshot error:", err);
+      });
+
+      // 2. Listen to Study Logs Collection
+      const logsRef = collection(db, 'users', currentUser.uid, 'logs');
+      const logsQuery = query(logsRef, orderBy('createdAt', 'desc'));
+      if (unsubscribeLogs) unsubscribeLogs();
+
+      unsubscribeLogs = onSnapshot(logsQuery, (snapshot) => {
+        logsData = [];
+        snapshot.forEach(docSnap => {
+          logsData.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        renderLogs();
+        updateDashboard();
+        renderAnalyticsCharts();
+      }, (err) => {
+        console.error("Logs snapshot error:", err);
+      });
+    }
+
+    // --- SCOPE FUNCTIONS ---
+    const formAddScope = document.getElementById('form-add-scope');
+    formAddScope.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const subject = document.getElementById('input-scope-subject').value.trim();
+      const testDate = document.getElementById('input-scope-date').value;
+      const rawItems = document.getElementById('input-scope-items').value.trim();
+
+      const items = rawItems ? rawItems.split('\n').map(i => ({ text: i.trim(), completed: false })).filter(i => i.text) : [];
+
+      try {
+        const scopesRef = collection(db, 'users', currentUser.uid, 'scopes');
+        await addDoc(scopesRef, {
+          subject,
+          testDate: testDate || null,
+          items,
+          createdAt: serverTimestamp()
+        });
+
+        formAddScope.reset();
+        showToast(`「${subject}」のテスト範囲を登録しました`, 'success');
+      } catch (err) {
+        console.error("Error adding scope:", err);
+        showToast("範囲の保存に失敗しました", "error");
+      }
+    });
+
+    // Render Scopes Cards
+    function renderScopes() {
+      const container = document.getElementById('scope-cards-container');
+      container.innerHTML = '';
+
+      if (scopesData.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-sm italic col-span-2 text-center py-8">テスト範囲データがありません。上のフォームから登録してください。</p>`;
+        return;
+      }
+
+      scopesData.forEach(scope => {
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4';
+
+        const completedCount = scope.items ? scope.items.filter(i => i.completed).length : 0;
+        const totalCount = scope.items ? scope.items.length : 0;
+        const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+        let itemsHtml = '';
+        if (scope.items && scope.items.length > 0) {
+          itemsHtml = scope.items.map((item, idx) => `
+            <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors text-sm">
+              <input type="checkbox" ${item.completed ? 'checked' : ''} 
+                data-scope-id="${scope.id}" data-item-idx="${idx}" 
+                class="toggle-scope-item mt-0.5 rounded border-slate-300 text-brand-600 focus:ring-brand-500 w-4 h-4">
+              <span class="${item.completed ? 'line-through text-slate-400' : 'text-slate-700'}">${escapeHtml(item.text)}</span>
+            </label>
+          `).join('');
+        } else {
+          itemsHtml = '<p class="text-slate-400 text-xs italic p-2">詳細な範囲チェック項目はありません。</p>';
+        }
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div>
+              <h4 class="font-bold text-slate-900 text-lg">${escapeHtml(scope.subject)}</h4>
+              ${scope.testDate ? `<span class="inline-flex items-center gap-1 text-xs text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md font-medium mt-1"><i data-lucide="calendar" class="w-3 h-3"></i> テスト日: ${scope.testDate}</span>` : ''}
+            </div>
+            <button data-delete-scope="${scope.id}" class="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors" title="削除">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-semibold text-slate-500">
+              <span>進行状況</span>
+              <span>${percent}% (${completedCount}/${totalCount})</span>
+            </div>
+            <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div class="bg-brand-600 h-full transition-all duration-300" style="width: ${percent}%"></div>
+            </div>
+          </div>
+
+          <div class="border-t border-slate-100 pt-3 space-y-1">
+            ${itemsHtml}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+      attachScopeEventListeners();
+    }
+
+    function attachScopeEventListeners() {
+      // Checkbox Toggles
+      document.querySelectorAll('.toggle-scope-item').forEach(chk => {
+        chk.addEventListener('change', async (e) => {
+          const scopeId = e.target.dataset.scopeId;
+          const idx = parseInt(e.target.dataset.itemIdx, 10);
+          
+          const scope = scopesData.find(s => s.id === scopeId);
+          if (!scope) return;
+
+          scope.items[idx].completed = e.target.checked;
+
+          try {
+            const docRef = doc(db, 'users', currentUser.uid, 'scopes', scopeId);
+            await updateDoc(docRef, { items: scope.items });
+          } catch (err) {
+            console.error("Error toggling scope item:", err);
+          }
+        });
+      });
+
+      // Delete Scope
+      document.querySelectorAll('[data-delete-scope]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const scopeId = e.currentTarget.dataset.deleteScope;
+          if (!scopeId || !currentUser) return;
+
+          try {
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'scopes', scopeId));
+            showToast("テスト範囲を削除しました", "info");
+          } catch (err) {
+            console.error("Error deleting scope:", err);
+          }
+        });
+      });
+    }
+
+    // Update Datalist for Subject Auto-complete
+    function updateSubjectDataList() {
+      const datalist = document.getElementById('registered-subjects-list');
+      datalist.innerHTML = '';
+      const subjects = new Set(scopesData.map(s => s.subject));
+      subjects.forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub;
+        datalist.appendChild(option);
+      });
+    }
+
+    // --- LOG FUNCTIONS ---
+    const formAddLog = document.getElementById('form-add-log');
+    formAddLog.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentUser) return;
+
+      const subject = document.getElementById('input-log-subject').value.trim();
+      const duration = parseInt(document.getElementById('input-log-duration').value, 10);
+      const rating = parseInt(document.getElementById('input-log-rating').value, 10);
+      const content = document.getElementById('input-log-content').value.trim();
+
+      try {
+        const logsRef = collection(db, 'users', currentUser.uid, 'logs');
+        await addDoc(logsRef, {
+          subject,
+          duration,
+          rating,
+          content,
+          createdAt: serverTimestamp()
+        });
+
+        formAddLog.reset();
+        showToast(`「${subject}」の勉強記録を追加しました (${duration}分)`, 'success');
+      } catch (err) {
+        console.error("Error adding log:", err);
+        showToast("記録の保存に失敗しました", "error");
+      }
+    });
+
+    // Render Logs List
+    function renderLogs() {
+      const timeline = document.getElementById('logs-timeline');
+      timeline.innerHTML = '';
+
+      if (logsData.length === 0) {
+        timeline.innerHTML = '<p class="text-slate-400 text-sm italic">記録がまだありません。</p>';
+        return;
+      }
+
+      logsData.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'p-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white transition-colors space-y-2';
+
+        const dateStr = log.createdAt ? new Date(log.createdAt.toDate()).toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' }) : '保存中...';
+        const stars = '⭐'.repeat(log.rating || 3);
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-900 text-sm bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-sm">${escapeHtml(log.subject)}</span>
+              <span class="text-xs font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full"><i data-lucide="clock" class="w-3 h-3 inline"></i> ${log.duration}分</span>
+            </div>
+            <span class="text-xs text-slate-400">${dateStr}</span>
+          </div>
+
+          <p class="text-sm text-slate-700 whitespace-pre-wrap">${escapeHtml(log.content)}</p>
+
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60 text-slate-500">
+            <span>理解度: ${stars}</span>
+            <button data-delete-log="${log.id}" class="hover:text-rose-600 transition-colors">削除</button>
+          </div>
+        `;
+
+        timeline.appendChild(item);
+      });
+
+      lucide.createIcons();
+
+      // Attach Delete Listeners for Logs
+      document.querySelectorAll('[data-delete-log]').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const logId = e.currentTarget.dataset.deleteLog;
+          if (!logId || !currentUser) return;
+
+          try {
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'logs', logId));
+            showToast("学習記録を削除しました", "info");
+          } catch (err) {
+            console.error("Error deleting log:", err);
+          }
+        });
+      });
+    }
+
+    // Update Dashboard Stats
+    function updateDashboard() {
+      // 1. Total Study Time
+      const totalMinutes = logsData.reduce((acc, curr) => acc + (curr.duration || 0), 0);
+      document.getElementById('stat-total-time').innerHTML = `${(totalMinutes / 60).toFixed(1)}<span class="text-xs font-normal text-slate-500 ml-1">時間</span>`;
+
+      // 2. Weekly Study Time (Past 7 Days)
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const weeklyMinutes = logsData.filter(l => l.createdAt && l.createdAt.toDate() >= oneWeekAgo)
+                                    .reduce((acc, curr) => acc + (curr.duration || 0), 0);
+      document.getElementById('stat-weekly-time').innerHTML = `${(weeklyMinutes / 60).toFixed(1)}<span class="text-xs font-normal text-slate-500 ml-1">時間</span>`;
+
+      // 3. Overall Scope Progress
+      let totalScopeItems = 0;
+      let completedScopeItems = 0;
+      scopesData.forEach(s => {
+        if (s.items) {
+          totalScopeItems += s.items.length;
+          completedScopeItems += s.items.filter(i => i.completed).length;
+        }
+      });
+      const scopePercent = totalScopeItems > 0 ? Math.round((completedScopeItems / totalScopeItems) * 100) : 0;
+      document.getElementById('stat-scope-progress').textContent = `${scopePercent}%`;
+
+      // 4. Unique Registered Subjects
+      const subjectsSet = new Set([
+        ...scopesData.map(s => s.subject),
+        ...logsData.map(l => l.subject)
+      ]);
+      document.getElementById('stat-subjects-count').textContent = subjectsSet.size;
+
+      // 5. Dashboard Scope Summary HTML
+      const dashScopeSummary = document.getElementById('dashboard-scope-summary');
+      dashScopeSummary.innerHTML = '';
+      if (scopesData.length === 0) {
+        dashScopeSummary.innerHTML = `<p class="text-slate-400 text-sm italic">テスト範囲が登録されていません。「テスト範囲管理」タブから追加してください。</p>`;
+      } else {
+        scopesData.forEach(scope => {
+          const comp = scope.items ? scope.items.filter(i => i.completed).length : 0;
+          const tot = scope.items ? scope.items.length : 0;
+          const pct = tot > 0 ? Math.round((comp / tot) * 100) : 0;
+
+          dashScopeSummary.innerHTML += `
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs font-medium text-slate-700">
+                <span class="font-bold">${escapeHtml(scope.subject)}</span>
+                <span>${pct}% (${comp}/${tot})</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-brand-600 h-full" style="width: ${pct}%"></div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      // 6. Recent Logs on Dashboard
+      const dashRecentLogs = document.getElementById('dashboard-recent-logs');
+      dashRecentLogs.innerHTML = '';
+      const recentLogs = logsData.slice(0, 3);
+      if (recentLogs.length === 0) {
+        dashRecentLogs.innerHTML = '<p class="text-slate-400 text-sm italic">学習記録がありません。</p>';
+      } else {
+        recentLogs.forEach(l => {
+          dashRecentLogs.innerHTML += `
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs flex justify-between items-center">
+              <div>
+                <span class="font-bold text-slate-800">${escapeHtml(l.subject)}</span>
+                <span class="text-slate-500 ml-1">(${l.duration}分)</span>
+              </div>
+              <span class="text-slate-400">${l.createdAt ? new Date(l.createdAt.toDate()).toLocaleDateString('ja-JP') : ''}</span>
+            </div>
+          `;
+        });
+      }
+    }
+
+    // Chart.js Rendering Logic
+    function renderAnalyticsCharts() {
+      // 1. Subject Pie Chart
+      const subjectTotals = {};
+      logsData.forEach(log => {
+        const sub = log.subject || 'その他';
+        subjectTotals[sub] = (subjectTotals[sub] || 0) + (log.duration || 0);
+      });
+
+      const subjectLabels = Object.keys(subjectTotals);
+      const subjectValues = Object.values(subjectTotals).map(m => (m / 60).toFixed(1));
+
+      const ctxSubject = document.getElementById('chart-subject').getContext('2d');
+      if (chartSubjectInstance) chartSubjectInstance.destroy();
+
+      chartSubjectInstance = new Chart(ctxSubject, {
+        type: 'doughnut',
+        data: {
+          labels: subjectLabels.length ? subjectLabels : ['データなし'],
+          datasets: [{
+            data: subjectValues.length ? subjectValues : [1],
+            backgroundColor: [
+              '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#64748b'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ` ${ctx.label}: ${ctx.raw} 時間`
+              }
+            }
+          }
+        }
+      });
+
+      // 2. Daily Bar Chart (Past 7 Days)
+      const days = [];
+      const dayLabels = [];
+      const dailyTotals = [];
+
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        days.push(d.toISOString().split('T')[0]);
+        dayLabels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+        dailyTotals.push(0);
+      }
+
+      logsData.forEach(log => {
+        if (log.createdAt) {
+          const logDate = log.createdAt.toDate().toISOString().split('T')[0];
+          const idx = days.indexOf(logDate);
+          if (idx !== -1) {
+            dailyTotals[idx] += (log.duration || 0);
+          }
+        }
+      });
+
+      const dailyHours = dailyTotals.map(m => (m / 60).toFixed(1));
+
+      const ctxDaily = document.getElementById('chart-daily').getContext('2d');
+      if (chartDailyInstance) chartDailyInstance.destroy();
+
+      chartDailyInstance = new Chart(ctxDaily, {
+        type: 'bar',
+        data: {
+          labels: dayLabels,
+          datasets: [{
+            label: '学習時間 (時間)',
+            data: dailyHours,
+            backgroundColor: '#6366f1',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // Tab Switching Logic
+    window.switchTab = function(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.dataset.tab === tabName) {
+          btn.classList.add('text-brand-600', 'bg-brand-50');
+          btn.classList.remove('text-slate-600', 'hover:bg-slate-100');
+        } else {
+          btn.classList.remove('text-brand-600', 'bg-brand-50');
+          btn.classList.add('text-slate-600', 'hover:bg-slate-100');
+        }
+      });
+
+      document.querySelectorAll('.tab-content').forEach(content => {
+        if (content.id === `tab-${tabName}`) {
+          content.classList.remove('hidden');
+        } else {
+          content.classList.add('hidden');
+        }
+      });
+
+      if (tabName === 'analytics') {
+        renderAnalyticsCharts();
+      }
+    };
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Modal Handlers
+    const modalGuide = document.getElementById('modal-guide');
+    document.getElementById('btn-open-guide').addEventListener('click', () => modalGuide.classList.remove('hidden'));
+    document.getElementById('btn-close-guide').addEventListener('click', () => modalGuide.classList.add('hidden'));
+    document.getElementById('btn-close-guide-2').addEventListener('click', () => modalGuide.classList.add('hidden'));
+
+    // HTML Sanitization Helper
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
