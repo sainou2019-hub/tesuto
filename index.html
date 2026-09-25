@@ -408,7 +408,8 @@ service cloud.firestore {
     import { 
       getAuth, 
       GoogleAuthProvider, 
-      signInWithPopup, 
+      signInWithRedirect,
+      getRedirectResult, 
       signOut, 
       onAuthStateChanged 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -442,6 +443,16 @@ service cloud.firestore {
     const auth = getAuth(app);
     const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
+
+    // Check Redirect Result on Page Load (Fixes COOP popup blocking)
+    getRedirectResult(auth).then((result) => {
+      if (result && result.user) {
+        showToast('ログインに成功しました！', 'success');
+      }
+    }).catch((error) => {
+      console.error('Redirect auth error:', error);
+      showToast('ログインエラー: ' + error.message, 'error');
+    });
 
     // Application State Variables
     let currentUser = null;
@@ -487,14 +498,13 @@ service cloud.firestore {
     const viewLoggedOut = document.getElementById('view-logged-out');
     const viewApp = document.getElementById('view-app');
 
-    // Google Login Handler
+    // Google Login Handler (Using Redirect Flow to avoid COOP restrictions)
     async function handleLogin() {
       try {
-        await signInWithPopup(auth, googleProvider);
-        showToast('ログインに成功しました！', 'success');
+        await signInWithRedirect(auth, googleProvider);
       } catch (error) {
         console.error('Login error:', error);
-        showToast('ログインに失敗しました: ' + error.message, 'error');
+        showToast('ログイン処理中にエラーが発生しました: ' + error.message, 'error');
       }
     }
 
